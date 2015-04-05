@@ -539,9 +539,6 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
     @Override
     public Object removeProperty(String key)
     {
-        //TODO
-        //logger.warn("MuleMessage.removeProperty() method is deprecated, use MuleMessage.removeProperty(String, PropertyScope) instead.  This method will be removed in the next point release");
-        //return removeProperty(key, PropertyScope.OUTBOUND);
         assertAccess(WRITE);
         return properties.removeProperty(key);
     }
@@ -686,8 +683,6 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
     @Deprecated
     public Set<String> getPropertyNames()
     {
-        //TODO logger.warn("MuleMessage.getPropertyNames() method is deprecated, use MuleMessage.getOutboundPropertyNames() instead.  This method will be removed in the next point release");
-        //return getOutboundPropertyNames();
         assertAccess(READ);
         return properties.getPropertyNames(PropertyScope.OUTBOUND);
     }
@@ -774,8 +769,6 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
     @Override
     public Object getProperty(String name, Object defaultValue)
     {
-        //TODO logger.warn("MuleMessage.getProperty() method is deprecated, use MuleMessage.getOutboundProperty() instead.  This method will be removed in the next point release");
-        //return getOutboundProperty(name, defaultValue);
         assertAccess(READ);
         return properties.getProperty(name, defaultValue);
     }
