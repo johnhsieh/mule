@@ -17,14 +17,17 @@ import static org.mockito.Mockito.when;
 import static org.mule.DataTypeMatcher.like;
 import static org.mule.transformer.types.MimeTypes.APPLICATION_XML;
 import org.mule.api.MuleContext;
+import org.mule.api.MuleEvent;
 import org.mule.api.MuleMessage;
 import org.mule.api.config.MuleProperties;
 import org.mule.api.transformer.DataType;
+import org.mule.api.transformer.Transformer;
 import org.mule.api.transport.PropertyScope;
 import org.mule.tck.junit4.AbstractMuleTestCase;
 import org.mule.tck.size.SmallTest;
 import org.mule.transformer.types.DataTypeFactory;
 import org.mule.transformer.types.MimeTypes;
+import org.mule.transformer.types.SimpleDataType;
 
 import java.util.Collections;
 
@@ -111,7 +114,6 @@ public class MuleMessageDataTypePropagationTestCase extends AbstractMuleTestCase
     }
 
     //TODO(pablo.kraan): DFL - mimeType property: setting encoding after mime type causes wrong mimetype property value
-    //TODO(pablo.kraan): DFL - Add tests for dataType propagation on message transformation
 
     @Test
     public void setsDefaultDataTypeOnCreation() throws Exception
@@ -162,6 +164,24 @@ public class MuleMessageDataTypePropagationTestCase extends AbstractMuleTestCase
         muleMessage.setPayload(1);
 
         assertDataType(muleMessage, Integer.class, APPLICATION_XML, CUSTOM_ENCODING);
+    }
+
+    @Test
+    public void updatesDataTypeOnTransformation() throws Exception
+    {
+        DefaultMuleMessage muleMessage = new DefaultMuleMessage("test", muleContext);
+
+        Transformer transformer = mock(Transformer.class);
+        when(transformer.isSourceDataTypeSupported(org.mockito.Matchers.<DataType<?>>any())).thenReturn(true);
+        DataType outputDataType = new SimpleDataType(Integer.class, APPLICATION_XML);
+        outputDataType.setEncoding(CUSTOM_ENCODING);
+        when(transformer.getReturnDataType()).thenReturn(outputDataType);
+
+        MuleEvent muleEvent = mock(MuleEvent.class);
+
+        muleMessage.applyAllTransformers(muleEvent, Collections.singletonList(transformer));
+
+        assertDataType(muleMessage, outputDataType);
     }
 
     @Test
