@@ -30,6 +30,7 @@ import org.mule.message.ds.StringDataSource;
 import org.mule.transformer.TransformerUtils;
 import org.mule.transformer.types.DataTypeFactory;
 import org.mule.transformer.types.MimeTypes;
+import org.mule.transformer.types.SimpleDataType;
 import org.mule.transport.NullPayload;
 import org.mule.util.ClassUtils;
 import org.mule.util.ObjectUtils;
@@ -119,6 +120,14 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
 
     private DataType<?> dataType;
 
+    private SimpleDataType<Object> createDefaultDataType()
+    {
+        SimpleDataType<Object> dataType = new SimpleDataType<>(Object.class, null);
+        dataType.setEncoding(SystemUtils.getDefaultEncoding(muleContext));
+
+        return dataType;
+    }
+
     static
     {
         addToConsumableClasses("javax.xml.stream.XMLStreamReader");
@@ -163,6 +172,7 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
         rootId = id;
         
         setMuleContext(muleContext);
+        dataType = createDefaultDataType();
 
         if (message instanceof MuleMessage)
         {
@@ -196,11 +206,14 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
         if (message instanceof MuleMessage)
         {
             MuleMessage payloadMessage = (MuleMessage) message;
+            dataType = payloadMessage.getDataType();
             setPayload(payloadMessage.getPayload());
             copyMessageProperties(payloadMessage);
         }
         else
         {
+            dataType = new SimpleDataType<Object>(message.getClass(), previous.getDataType().getMimeType());
+            dataType.setEncoding(previous.getEncoding());
             setPayload(message);
             copyMessagePropertiesContext(previous);
         }
@@ -474,6 +487,11 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
                     logger.debug("setProperty(key, value) called with null value; removing key: " + key);
                 }
                 properties.removeProperty(key);
+            }
+
+            if (MuleProperties.MULE_ENCODING_PROPERTY.equals(key))
+            {
+                dataType.setEncoding((String) value);
             }
         }
         else
@@ -1208,10 +1226,10 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
         if (dataType != null)
         {
             encoding = dataType.getEncoding();
-        }
-        if (encoding != null)
-        {
-            return encoding;
+            if (encoding != null)
+            {
+                return encoding;
+            }
         }
         encoding = getOutboundProperty(MuleProperties.MULE_ENCODING_PROPERTY);
         if (encoding != null)
@@ -1231,6 +1249,7 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
     public void setEncoding(String encoding)
     {
         assertAccess(WRITE);
+        dataType.setEncoding(encoding);
         if (encoding != null)
         {
             setOutboundProperty(MuleProperties.MULE_ENCODING_PROPERTY, encoding);
@@ -1244,6 +1263,9 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
     public void setMimeType(String mimeType)
     {
         assertAccess(WRITE);
+
+        dataType.setMimeType(mimeType);
+
         if (mimeType != null && !mimeType.equals(MimeTypes.ANY))
         {
             String encoding = getEncoding();
@@ -1339,10 +1361,16 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
         if (payload == null)
         {
             this.payload = NullPayload.getInstance();
+            DataType newDataType = new SimpleDataType(Object.class, dataType.getMimeType());
+            newDataType.setEncoding(dataType.getEncoding());
+            dataType = newDataType;
         }
         else
         {
             this.payload = payload;
+            DataType  newDataType = new SimpleDataType<>(payload.getClass(), dataType.getMimeType());
+            newDataType.setEncoding(dataType.getEncoding());
+            dataType = newDataType;
         }
         cache = null;
     }

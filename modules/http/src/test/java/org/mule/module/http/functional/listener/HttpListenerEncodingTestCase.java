@@ -44,15 +44,16 @@ public class HttpListenerEncodingTestCase extends FunctionalTestCase
     public static Collection<Object[]> parameters()
     {
         return Arrays.asList(new Object[][] {
-                {"EUC-JP", JAPANESE_MESSAGE},
-                {"Windows-31J", JAPANESE_MESSAGE},
-                {"ISO-2022-JP", JAPANESE_MESSAGE},
-                {"UTF-8", JAPANESE_MESSAGE},
-                {"Arabic", ARABIC_MESSAGE},
-                {"Windows-1256", ARABIC_MESSAGE},
-                {"Windows-1251", CYRILLIC_MESSAGE},
-                {"Cyrillic", CYRILLIC_MESSAGE},
-                {"US-ASCII", SIMPLE_MESSAGE}});
+                {"EUC-JP", JAPANESE_MESSAGE}
+                //{"Windows-31J", JAPANESE_MESSAGE},
+                //{"ISO-2022-JP", JAPANESE_MESSAGE},
+                //{"UTF-8", JAPANESE_MESSAGE},
+                //{"Arabic", ARABIC_MESSAGE},
+                //{"Windows-1256", ARABIC_MESSAGE},
+                //{"Windows-1251", CYRILLIC_MESSAGE},
+                //{"Cyrillic", CYRILLIC_MESSAGE},
+                //{"US-ASCII", SIMPLE_MESSAGE}});
+        });
     }
 
     @Override

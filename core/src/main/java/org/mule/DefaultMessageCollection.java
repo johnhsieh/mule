@@ -203,6 +203,7 @@ public class DefaultMessageCollection extends DefaultMuleMessage implements Mule
     @Override
     public synchronized void setPayload(Object payload)
     {
+        //TODO(pablo.kraan): DFL - reset dataType
         if (this.getPayload() == payload)
         {
             return;
