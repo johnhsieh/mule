@@ -1556,7 +1556,12 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
         {
             setPayload(result);
         }
-        setDataType(transformer.getReturnDataType());
+
+        //TODO(pablo.kraan): DFL - is OK to have a trnasformer without output data type?
+        if (transformer.getReturnDataType() != null)
+        {
+            setDataType(transformer.getReturnDataType());
+        }
     }
 
     protected void setDataType(DataType<?> dt)
