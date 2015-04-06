@@ -2009,6 +2009,12 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
         setOutboundProperty(name, value);
     }
 
+    @Override
+    public DataType<?> getPropertyDataType(String name, PropertyScope scope)
+    {
+        return properties.getPropertyDataType(name, scope);
+    }
+
     /**
      * Find property in one of the specified scopes, in order
      */

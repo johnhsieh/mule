@@ -145,6 +145,24 @@ public class MessagePropertiesContext implements Serializable
         }
     }
 
+    public DataType<?> getPropertyDataType(String key, PropertyScope scope)
+    {
+        if (scope == null)
+        {
+            scope = PropertyScope.OUTBOUND;
+        }
+
+        PropertyData propertyData = getScopedProperties(scope).get(key);
+        if (propertyData == null)
+        {
+            return null;
+        }
+        else
+        {
+            return propertyData.getDataType();
+        }
+    }
+
     /**
      * Removes all properties from all scopes except for SESSION and INBOUND (which is read-only). You may
      * explicitly clear the session properties by calling clearProperties(PropertyScope.SESSION)

@@ -390,8 +390,14 @@ public interface MuleMessage extends Serializable
     @Deprecated
     void setStringProperty(String name, String value);
 
-
-
+    /**
+     * Gets a property from the message with a given scope.
+     *
+     * @param name the name or key of the property. This must be non-null.
+     * @param scope The scope of the property to retrieve. This must be non-null.
+     * @return the property data type or null if the property does not exist in the specified scope
+     */
+    DataType<?> getPropertyDataType(String name, PropertyScope scope);
 
     /**
      * Sets a correlationId for this message. The correlation Id can be used by
