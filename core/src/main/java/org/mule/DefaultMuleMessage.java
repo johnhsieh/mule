@@ -377,6 +377,7 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
     @SuppressWarnings("unchecked")
     protected <T> T getPayload(DataType<T> resultType, String encoding) throws TransformerException
     {
+        //TODO(pablo.kraan): DFL - why this method receives an encoding instead of taking it from the resultType param?
         // Handle null by ignoring the request
         if (resultType == null)
         {
