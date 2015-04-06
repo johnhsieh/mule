@@ -6,7 +6,7 @@
  */
 package org.mule.session;
 
-import org.mule.PropertyData;
+import org.mule.PropertyValue;
 import org.mule.api.MuleContext;
 import org.mule.api.MuleSession;
 import org.mule.api.construct.FlowConstruct;
@@ -60,7 +60,7 @@ public final class DefaultMuleSession implements MuleSession
      */
     private SecurityContext securityContext;
 
-    private Map<String, PropertyData> properties;
+    private Map<String, PropertyValue> properties;
 
     @Deprecated
     private FlowConstruct flowConstruct;
@@ -171,7 +171,7 @@ public final class DefaultMuleSession implements MuleSession
 
         //TODO(pablo.kraan): DFL - check datatype construction arguments
         DataType dataType = new SimpleDataType(value == null ? Object.class : value.getClass(), null);
-        properties.put(key, new PropertyData(value, dataType));
+        properties.put(key, new PropertyValue(value, dataType));
     }
 
     /**
@@ -184,8 +184,8 @@ public final class DefaultMuleSession implements MuleSession
     @SuppressWarnings("unchecked")
     public <T> T getProperty(Object key)
     {
-        PropertyData propertyData = properties.get(key);
-        return propertyData == null ? null : (T) propertyData.getValue();
+        PropertyValue propertyValue = properties.get(key);
+        return propertyValue == null ? null : (T) propertyValue.getValue();
     }
 
     /**
@@ -225,10 +225,10 @@ public final class DefaultMuleSession implements MuleSession
         {
             return;
         }
-        Iterator<Entry<String, PropertyData>> propertyIterator = properties.entrySet().iterator();
+        Iterator<Entry<String, PropertyValue>> propertyIterator = properties.entrySet().iterator();
         while (propertyIterator.hasNext())
         {
-            final Entry<String, PropertyData> entry = propertyIterator.next();
+            final Entry<String, PropertyValue> entry = propertyIterator.next();
             if (entry.getValue().getValue() instanceof Serializable)
             {
                 propertyIterator.remove();
@@ -245,24 +245,24 @@ public final class DefaultMuleSession implements MuleSession
         Map<String, Object> result = new HashMap<>();
         for (String key : properties.keySet())
         {
-            PropertyData propertyData = properties.get(key);
-            result.put(key, propertyData.getValue());
+            PropertyValue propertyValue = properties.get(key);
+            result.put(key, propertyValue.getValue());
         }
 
         return result;
     }
 
-    public Map<String, PropertyData> getExtendedProperties()
+    public Map<String, PropertyValue> getExtendedProperties()
     {
         return properties;
     }
 
     void removeNonSerializableProperties()
     {
-        Iterator<Entry<String, PropertyData>> propertyIterator = properties.entrySet().iterator();
+        Iterator<Entry<String, PropertyValue>> propertyIterator = properties.entrySet().iterator();
         while (propertyIterator.hasNext())
         {
-            final Entry<String, PropertyData> entry = propertyIterator.next();
+            final Entry<String, PropertyValue> entry = propertyIterator.next();
             if (!(entry.getValue().getValue() instanceof Serializable))
             {
                 logger.warn(CoreMessages.propertyNotSerializableWasDropped(entry.getKey()));
@@ -298,7 +298,7 @@ public final class DefaultMuleSession implements MuleSession
         // Temporally replaces the properties to write only serializable values into the stream
         DefaultMuleSession copy = new DefaultMuleSession(this);
         copy.removeNonSerializableProperties();
-        Map<String, PropertyData> backupProperties = properties;
+        Map<String, PropertyValue> backupProperties = properties;
         try
         {
             properties = copy.properties;
@@ -335,7 +335,7 @@ public final class DefaultMuleSession implements MuleSession
     }
 
     @Override
-    public PropertyData getPropertyData(String key)
+    public PropertyValue getPropertyData(String key)
     {
         return properties.get(key);
     }

@@ -92,7 +92,7 @@ public class DefaultMuleEvent implements MuleEvent, ThreadSafeAccess, Deserializ
 
     private transient Map<String, Object> serializedData = null;
 
-    private CopyOnWriteCaseInsensitiveMap<String, PropertyData> flowVariables = new CopyOnWriteCaseInsensitiveMap<>();
+    private CopyOnWriteCaseInsensitiveMap<String, PropertyValue> flowVariables = new CopyOnWriteCaseInsensitiveMap<>();
 
     // Constructors
 
@@ -932,7 +932,7 @@ public class DefaultMuleEvent implements MuleEvent, ThreadSafeAccess, Deserializ
                 out.writeObject(getFlowConstruct() != null ? getFlowConstruct().getName() : "null");
             }
         }
-        for (Map.Entry<String, PropertyData> entry : flowVariables.entrySet())
+        for (Map.Entry<String, PropertyValue> entry : flowVariables.entrySet())
         {
             Object value = entry.getValue();
             if (value != null && !(value instanceof Serializable))
@@ -1038,9 +1038,9 @@ public class DefaultMuleEvent implements MuleEvent, ThreadSafeAccess, Deserializ
     @SuppressWarnings("unchecked")
     public <T> T getFlowVariable(String key)
     {
-        PropertyData propertyData = flowVariables.get(key);
+        PropertyValue propertyValue = flowVariables.get(key);
 
-        return propertyData == null ? null : (T) propertyData.getValue();
+        return propertyValue == null ? null : (T) propertyValue.getValue();
     }
 
     @Override
@@ -1048,7 +1048,7 @@ public class DefaultMuleEvent implements MuleEvent, ThreadSafeAccess, Deserializ
     {
         //TODO(pablo.kraan): DFL - review property data type creation params
         SimpleDataType<Object> propertyDataType = new SimpleDataType<>(value == null ? Object.class : value.getClass(), null);
-        flowVariables.put(key, new PropertyData(value, propertyDataType));
+        flowVariables.put(key, new PropertyValue(value, propertyDataType));
     }
 
     @Override

@@ -15,7 +15,6 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mule.DataTypeMatcher.like;
-import static org.mule.transformer.types.MimeTypes.ANY;
 import static org.mule.transformer.types.MimeTypes.APPLICATION_XML;
 import org.mule.api.MuleContext;
 import org.mule.api.MuleEvent;
@@ -266,10 +265,22 @@ public class MuleMessageDataTypePropagationTestCase extends AbstractMuleTestCase
     public void setsDefaultSessionPropertyDataType() throws Exception
     {
         DefaultMuleMessage muleMessage = new DefaultMuleMessage(TEST, muleContext);
-        muleMessage.setSessionProperties(new HashMap<String, PropertyData>());
+        muleMessage.setSessionProperties(new HashMap<String, PropertyValue>());
         muleMessage.setProperty(TEST_PROPERTY, TEST, PropertyScope.SESSION);
 
         assertDefaultPropertyDataType(muleMessage, PropertyScope.SESSION);
+    }
+
+    @Test
+    public void setsCustomPropertyDataType() throws Exception
+    {
+        DefaultMuleMessage muleMessage = new DefaultMuleMessage(TEST, muleContext);
+        DataType dataType = new SimpleDataType(String.class, APPLICATION_XML);
+        dataType.setEncoding(CUSTOM_ENCODING);
+
+        muleMessage.setProperty(TEST_PROPERTY, TEST, PropertyScope.OUTBOUND, dataType);
+
+        assertPropertyDataType(muleMessage, PropertyScope.OUTBOUND, dataType);
     }
 
     private void doSetsDataTypeTest(DataType<?> dataType)
@@ -297,7 +308,12 @@ public class MuleMessageDataTypePropagationTestCase extends AbstractMuleTestCase
 
     private void assertDefaultPropertyDataType(DefaultMuleMessage muleMessage, PropertyScope scope)
     {
-        DataType<?> dataType = muleMessage.getPropertyDataType(TEST_PROPERTY, scope);
-        assertThat(dataType, like(String.class, ANY, null));
+        assertPropertyDataType(muleMessage, scope, DataType.STRING_DATA_TYPE);
+    }
+
+    private void assertPropertyDataType(DefaultMuleMessage muleMessage, PropertyScope scope, DataType dataType)
+    {
+        DataType<?> actualDataType = muleMessage.getPropertyDataType(TEST_PROPERTY, scope);
+        assertThat(actualDataType, like(dataType));
     }
 }

@@ -6,7 +6,7 @@
  */
 package org.mule.api;
 
-import org.mule.PropertyData;
+import org.mule.PropertyValue;
 import org.mule.api.construct.FlowConstruct;
 import org.mule.api.security.SecurityContext;
 import org.mule.api.transport.SessionHandler;
@@ -146,5 +146,5 @@ public interface MuleSession extends Serializable
      * @param key the key for the object data being stored on the session
      * @return the value of the session property data or null if the property does not exist
      */
-    PropertyData getPropertyData(String key);
+    PropertyValue getPropertyData(String key);
 }

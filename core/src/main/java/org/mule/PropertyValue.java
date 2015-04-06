@@ -12,22 +12,22 @@ import org.mule.api.transformer.DataType;
 import java.io.Serializable;
 
 /**
- *
+ *  Maintains a message property value
  */
-public class PropertyData implements Serializable
+public class PropertyValue implements Serializable
 {
 
     private final Object value;
 
-    private final DataType<Object> dataType;
+    private final DataType<?> dataType;
 
-    public PropertyData(Object value, DataType<Object> dataType)
+    public PropertyValue(Object value, DataType<?> dataType)
     {
         this.value = value;
         this.dataType = dataType;
     }
 
-    public DataType<Object> getDataType()
+    public DataType<?> getDataType()
     {
         return dataType;
     }

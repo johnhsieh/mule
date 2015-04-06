@@ -486,12 +486,19 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
     @Override
     public void setProperty(String key, Object value, PropertyScope scope)
     {
+        DataType dataType = new SimpleDataType(value == null ? Object.class : value.getClass(), null);
+        setProperty(key, value, scope, dataType);
+    }
+
+    @Override
+    public void setProperty(String key, Object value, PropertyScope scope, DataType<?> dataType)
+    {
         assertAccess(WRITE);
         if (key != null)
         {
             if (value != null)
             {
-                properties.setProperty(key, value, scope);
+                properties.setProperty(key, value, scope, dataType);
             }
             else
             {
@@ -2085,12 +2092,12 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
         newMessage.setEncoding(getEncoding());
     }
     
-    void setSessionProperties(Map<String, PropertyData> sessionProperties)
+    void setSessionProperties(Map<String, PropertyValue> sessionProperties)
     {
         properties.sessionMap = sessionProperties;
     }
 
-    void setInvocationProperties(Map<String, PropertyData> invocationProperties)
+    void setInvocationProperties(Map<String, PropertyValue> invocationProperties)
     {
         properties.invocationMap = invocationProperties;
     }
@@ -2111,7 +2118,7 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
         return id.hashCode();
     }
     
-    protected Map<String, PropertyData> getOrphanFlowVariables()
+    protected Map<String, PropertyValue> getOrphanFlowVariables()
     {
         return properties.getOrphanFlowVariables();
     }

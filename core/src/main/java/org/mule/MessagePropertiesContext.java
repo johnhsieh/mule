@@ -53,16 +53,16 @@ public class MessagePropertiesContext implements Serializable
 
     private static Log logger = LogFactory.getLog(MessagePropertiesContext.class);
 
-    protected CopyOnWriteCaseInsensitiveMap<String, PropertyData> inboundMap;
-    protected CopyOnWriteCaseInsensitiveMap<String, PropertyData> outboundMap;
+    protected CopyOnWriteCaseInsensitiveMap<String, PropertyValue> inboundMap;
+    protected CopyOnWriteCaseInsensitiveMap<String, PropertyValue> outboundMap;
 
-    protected Map<String, PropertyData> invocationMap = new UndefinedInvocationPropertiesMap();
-    protected transient Map<String, PropertyData> sessionMap = new UndefinedSessionPropertiesMap();
+    protected Map<String, PropertyValue> invocationMap = new UndefinedInvocationPropertiesMap();
+    protected transient Map<String, PropertyValue> sessionMap = new UndefinedSessionPropertiesMap();
 
     public MessagePropertiesContext()
     {
-        inboundMap = new CopyOnWriteCaseInsensitiveMap<String, PropertyData>();
-        outboundMap = new CopyOnWriteCaseInsensitiveMap<String, PropertyData>();
+        inboundMap = new CopyOnWriteCaseInsensitiveMap<String, PropertyValue>();
+        outboundMap = new CopyOnWriteCaseInsensitiveMap<String, PropertyValue>();
     }
 
     public MessagePropertiesContext(MessagePropertiesContext previous)
@@ -73,7 +73,7 @@ public class MessagePropertiesContext implements Serializable
         sessionMap = previous.sessionMap;
     }
 
-    protected Map<String, PropertyData> getScopedProperties(PropertyScope scope)
+    protected Map<String, PropertyValue> getScopedProperties(PropertyScope scope)
     {
         if (PropertyScope.SESSION.equals(scope))
         {
@@ -106,10 +106,10 @@ public class MessagePropertiesContext implements Serializable
     {
         if (properties != null)
         {
-            Map<String, PropertyData> propertyDatas = new HashMap<>();
+            Map<String, PropertyValue> propertyDatas = new HashMap<>();
             for (String key : properties.keySet())
             {
-                propertyDatas.put(key, new PropertyData(properties.get(key), DataType.OBJECT_DATA_TYPE));
+                propertyDatas.put(key, new PropertyValue(properties.get(key), DataType.OBJECT_DATA_TYPE));
             }
 
             getScopedProperties(PropertyScope.INBOUND).putAll(propertyDatas);
@@ -134,14 +134,14 @@ public class MessagePropertiesContext implements Serializable
             scope = PropertyScope.OUTBOUND;
         }
 
-        PropertyData propertyData = getScopedProperties(scope).get(key);
-        if (propertyData == null)
+        PropertyValue propertyValue = getScopedProperties(scope).get(key);
+        if (propertyValue == null)
         {
             return null;
         }
         else
         {
-            return (T) propertyData.getValue();
+            return (T) propertyValue.getValue();
         }
     }
 
@@ -152,14 +152,14 @@ public class MessagePropertiesContext implements Serializable
             scope = PropertyScope.OUTBOUND;
         }
 
-        PropertyData propertyData = getScopedProperties(scope).get(key);
-        if (propertyData == null)
+        PropertyValue propertyValue = getScopedProperties(scope).get(key);
+        if (propertyValue == null)
         {
             return null;
         }
         else
         {
-            return propertyData.getDataType();
+            return propertyValue.getDataType();
         }
     }
 
@@ -169,7 +169,7 @@ public class MessagePropertiesContext implements Serializable
      */
     public void clearProperties()
     {
-        Map<String, PropertyData> props = getScopedProperties(PropertyScope.INVOCATION);
+        Map<String, PropertyValue> props = getScopedProperties(PropertyScope.INVOCATION);
         props.clear();
         props = getScopedProperties(PropertyScope.OUTBOUND);
         props.clear();
@@ -183,7 +183,7 @@ public class MessagePropertiesContext implements Serializable
             return;
         }
 
-        Map<String, PropertyData> props = getScopedProperties(scope);
+        Map<String, PropertyValue> props = getScopedProperties(scope);
         props.clear();
     }
 
@@ -196,8 +196,8 @@ public class MessagePropertiesContext implements Serializable
      */
     public Object removeProperty(String key)
     {
-        PropertyData value = getScopedProperties(PropertyScope.OUTBOUND).remove(key);
-        PropertyData inv = getScopedProperties(PropertyScope.INVOCATION).remove(key);
+        PropertyValue value = getScopedProperties(PropertyScope.OUTBOUND).remove(key);
+        PropertyValue inv = getScopedProperties(PropertyScope.INVOCATION).remove(key);
 
         if (value == null)
         {
@@ -220,7 +220,7 @@ public class MessagePropertiesContext implements Serializable
             return removeProperty(key);
         }
 
-        PropertyData value = getScopedProperties(scope).remove(key);
+        PropertyValue value = getScopedProperties(scope).remove(key);
 
         return value == null ? null : value.getValue();
     }
@@ -237,7 +237,7 @@ public class MessagePropertiesContext implements Serializable
     {
         //TODO(pablo.kraan): DFL - check property data creation arguments
         DataType dataType = new SimpleDataType(value == null ? Object.class : value.getClass(), null);
-        getScopedProperties(DEFAULT_SCOPE).put(key, new PropertyData(value, dataType));
+        getScopedProperties(DEFAULT_SCOPE).put(key, new PropertyValue(value, dataType));
     }
 
     /**
@@ -250,14 +250,28 @@ public class MessagePropertiesContext implements Serializable
      */
     public void setProperty(String key, Object value, PropertyScope scope)
     {
+        //TODO(pablo.kraan): DFL - check property data creation arguments
+        DataType dataType = new SimpleDataType(value == null ? Object.class : value.getClass(), null);
+
+        setProperty(key, value, scope, dataType);
+    }
+
+    /**
+     * Set a property on the message
+     *
+     * @param key the key on which to associate the value
+     * @param value the property value
+     * @param scope the scope to se the property on
+     * @see org.mule.api.transport.PropertyScope
+     */
+    public void setProperty(String key, Object value, PropertyScope scope, DataType<?> dataType)
+    {
         if (!(value instanceof Serializable) && PropertyScope.SESSION.equals(scope))
         {
             logger.warn(CoreMessages.sessionPropertyNotSerializableWarning(key));
         }
 
-        //TODO(pablo.kraan): DFL - check property data creation arguments
-        DataType dataType = new SimpleDataType(value == null ? Object.class : value.getClass(), null);
-        getScopedProperties(scope).put(key, new PropertyData(value, dataType));
+        getScopedProperties(scope).put(key, new PropertyValue(value, dataType));
     }
 
     /**
@@ -266,14 +280,6 @@ public class MessagePropertiesContext implements Serializable
     public Set<String> getPropertyNames(PropertyScope scope)
     {
         return Collections.unmodifiableSet(getScopedProperties(scope).keySet());
-    }
-
-    protected void checkScopeForWriteAccess(PropertyScope scope)
-    {
-        if (scope == null || PropertyScope.INBOUND.equals(scope))
-        {
-            throw new IllegalArgumentException("Scope is invalid for writing properties: " + scope);
-        }
     }
 
     public Object getProperty(String key, Object defaultValue)
@@ -351,7 +357,7 @@ public class MessagePropertiesContext implements Serializable
      */
     private void writeObject(java.io.ObjectOutputStream out) throws IOException
     {
-        for (Map.Entry<String, PropertyData> entry : inboundMap.entrySet())
+        for (Map.Entry<String, PropertyValue> entry : inboundMap.entrySet())
         {
             Object value = entry.getValue().getValue();
             if (value != null && !(value instanceof Serializable))
@@ -363,7 +369,7 @@ public class MessagePropertiesContext implements Serializable
                 throw new IOException(message);
             }
         }
-        for (Map.Entry<String, PropertyData> entry : outboundMap.entrySet())
+        for (Map.Entry<String, PropertyValue> entry : outboundMap.entrySet())
         {
             Object value = entry.getValue().getValue();
             if (value != null && !(value instanceof Serializable))
@@ -377,7 +383,7 @@ public class MessagePropertiesContext implements Serializable
         }
         if (invocationMap instanceof UndefinedInvocationPropertiesMap)
         {
-            for (Map.Entry<String, PropertyData> entry : invocationMap.entrySet())
+            for (Map.Entry<String, PropertyValue> entry : invocationMap.entrySet())
             {
                 Object value = entry.getValue().getValue();
                 if (value != null && !(value instanceof Serializable))
@@ -399,20 +405,20 @@ public class MessagePropertiesContext implements Serializable
         sessionMap = new UndefinedSessionPropertiesMap();
     }
 
-    private static class UndefinedSessionPropertiesMap extends AbstractMap<String, PropertyData>
+    private static class UndefinedSessionPropertiesMap extends AbstractMap<String, PropertyValue>
         implements Serializable
     {
 
         private static final long serialVersionUID = -7982608304570908737L;
 
         @Override
-        public Set<java.util.Map.Entry<String, PropertyData>> entrySet()
+        public Set<java.util.Map.Entry<String, PropertyValue>> entrySet()
         {
             return Collections.emptySet();
         }
 
         @Override
-        public PropertyData put(String key, PropertyData value)
+        public PropertyValue put(String key, PropertyValue value)
         {
             throw new IllegalStateException(
                 String.format(
@@ -422,7 +428,7 @@ public class MessagePropertiesContext implements Serializable
         }
 
         @Override
-        public PropertyData get(Object key)
+        public PropertyValue get(Object key)
         {
             logger.warn(String.format(
                 "Detected an attempt to get a invocation or session property, "
@@ -437,7 +443,7 @@ public class MessagePropertiesContext implements Serializable
 
     }
 
-    protected Map<String, PropertyData> getOrphanFlowVariables()
+    protected Map<String, PropertyValue> getOrphanFlowVariables()
     {
         if (invocationMap instanceof UndefinedInvocationPropertiesMap)
         {
