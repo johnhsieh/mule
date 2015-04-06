@@ -28,6 +28,7 @@ import org.mule.tck.size.SmallTest;
 import org.mule.transformer.types.DataTypeFactory;
 import org.mule.transformer.types.MimeTypes;
 import org.mule.transformer.types.SimpleDataType;
+import org.mule.transport.NullPayload;
 
 import java.util.Collections;
 
@@ -153,6 +154,34 @@ public class MuleMessageDataTypePropagationTestCase extends AbstractMuleTestCase
         muleMessage.setPayload(null);
 
         assertDataType(muleMessage, Object.class, APPLICATION_XML, CUSTOM_ENCODING);
+    }
+
+    @Test
+    public void setsNullPayloadWithDataType() throws Exception
+    {
+        DefaultMuleMessage muleMessage = new DefaultMuleMessage("test", muleContext);
+
+        SimpleDataType<Object> newDataType = new SimpleDataType<>(Integer.class, APPLICATION_XML);
+        newDataType.setEncoding(CUSTOM_ENCODING);
+
+        muleMessage.setPayload(null, newDataType);
+
+        assertThat(muleMessage.getPayload(), Matchers.<Object>equalTo(NullPayload.getInstance()));
+        assertDataType(muleMessage, Integer.class, APPLICATION_XML, CUSTOM_ENCODING);
+    }
+
+    @Test
+    public void setsPayloadWithDataType() throws Exception
+    {
+        DefaultMuleMessage muleMessage = new DefaultMuleMessage("test", muleContext);
+
+        SimpleDataType<Object> newDataType = new SimpleDataType<>(Integer.class, APPLICATION_XML);
+        newDataType.setEncoding(CUSTOM_ENCODING);
+
+        muleMessage.setPayload("test", newDataType);
+
+        assertThat(muleMessage.getPayload(), Matchers.<Object>equalTo("test"));
+        assertDataType(muleMessage, Integer.class, APPLICATION_XML, CUSTOM_ENCODING);
     }
 
     @Test

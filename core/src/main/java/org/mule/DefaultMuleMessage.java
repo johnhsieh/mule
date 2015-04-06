@@ -1357,20 +1357,35 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
     @Override
     public synchronized void setPayload(Object payload)
     {
+        DataType  newDataType;
+        if (payload == null)
+        {
+            newDataType = new SimpleDataType(Object.class, dataType.getMimeType());
+            newDataType.setEncoding(dataType.getEncoding());
+        }
+        else
+        {
+            newDataType = new SimpleDataType<>(payload.getClass(), dataType.getMimeType());
+            newDataType.setEncoding(dataType.getEncoding());
+        }
+
+        setPayload(payload, newDataType);
+    }
+
+    @Override
+    public void setPayload(Object payload, DataType<?> dataType)
+    {
         if (payload == null)
         {
             this.payload = NullPayload.getInstance();
-            DataType newDataType = new SimpleDataType(Object.class, dataType.getMimeType());
-            newDataType.setEncoding(dataType.getEncoding());
-            dataType = createDataTypeWrapper(newDataType);
         }
         else
         {
             this.payload = payload;
-            DataType  newDataType = new SimpleDataType<>(payload.getClass(), dataType.getMimeType());
-            newDataType.setEncoding(dataType.getEncoding());
-            dataType = createDataTypeWrapper(newDataType);
         }
+
+        this.dataType = createDataTypeWrapper(dataType);
+
         cache = null;
     }
 

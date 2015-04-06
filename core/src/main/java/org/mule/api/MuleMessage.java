@@ -665,6 +665,16 @@ public interface MuleMessage extends Serializable
     void setPayload(Object payload);
 
     /**
+     * Update the message payload. This is typically only called if the
+     * payload was originally an InputStream. In which case, if the InputStream
+     * is consumed, it needs to be replaced for future access.
+     *
+     * @param payload the object to assign as the message payload
+     * @param dataType payloads's dataType. Not null.
+     */
+    void setPayload(Object payload, DataType<?> dataType);
+
+    /**
      * Will attempt to obtain the payload of this message with the desired Class type. This will
      * try and resolve a transformer that can do this transformation. If a transformer cannot be found
      * an exception is thrown.  Any transformers added to the registry will be checked for compatibility
