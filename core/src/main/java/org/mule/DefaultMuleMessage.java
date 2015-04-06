@@ -2079,12 +2079,12 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
         newMessage.setEncoding(getEncoding());
     }
     
-    void setSessionProperties(Map<String, Object> sessionProperties)
+    void setSessionProperties(Map<String, PropertyData> sessionProperties)
     {
         properties.sessionMap = sessionProperties;
     }
 
-    void setInvocationProperties(Map<String, Object> invocationProperties)
+    void setInvocationProperties(Map<String, PropertyData> invocationProperties)
     {
         properties.invocationMap = invocationProperties;
     }
@@ -2105,7 +2105,7 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
         return id.hashCode();
     }
     
-    protected Map<String, Object> getOrphanFlowVariables()
+    protected Map<String, PropertyData> getOrphanFlowVariables()
     {
         return properties.getOrphanFlowVariables();
     }

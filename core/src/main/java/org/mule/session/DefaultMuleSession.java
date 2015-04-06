@@ -6,11 +6,14 @@
  */
 package org.mule.session;
 
+import org.mule.PropertyData;
 import org.mule.api.MuleContext;
 import org.mule.api.MuleSession;
 import org.mule.api.construct.FlowConstruct;
 import org.mule.api.security.SecurityContext;
+import org.mule.api.transformer.DataType;
 import org.mule.config.i18n.CoreMessages;
+import org.mule.transformer.types.SimpleDataType;
 import org.mule.util.CaseInsensitiveHashMap;
 import org.mule.util.UUID;
 
@@ -19,6 +22,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -56,7 +60,7 @@ public final class DefaultMuleSession implements MuleSession
      */
     private SecurityContext securityContext;
 
-    private Map<String, Object> properties;
+    private Map<String, PropertyData> properties;
 
     @Deprecated
     private FlowConstruct flowConstruct;
@@ -76,7 +80,7 @@ public final class DefaultMuleSession implements MuleSession
         this.properties = Collections.synchronizedMap(new CaseInsensitiveHashMap/* <String, Object> */());
         for (String key : session.getPropertyNamesAsSet())
         {
-            this.properties.put(key, session.getProperty(key));
+            this.properties.put(key, session.getPropertyData(key));
         }
     }
 
@@ -164,7 +168,10 @@ public final class DefaultMuleSession implements MuleSession
         {
             logger.warn(CoreMessages.sessionPropertyNotSerializableWarning(key));
         }
-        properties.put(key, value);
+
+        //TODO(pablo.kraan): DFL - check datatype construction arguments
+        DataType dataType = new SimpleDataType(value == null ? Object.class : value.getClass(), null);
+        properties.put(key, new PropertyData(value, dataType));
     }
 
     /**
@@ -177,7 +184,8 @@ public final class DefaultMuleSession implements MuleSession
     @SuppressWarnings("unchecked")
     public <T> T getProperty(Object key)
     {
-        return (T) properties.get(key);
+        PropertyData propertyData = properties.get(key);
+        return propertyData == null ? null : (T) propertyData.getValue();
     }
 
     /**
@@ -217,33 +225,45 @@ public final class DefaultMuleSession implements MuleSession
         {
             return;
         }
-        Iterator<Entry<String, Object>> propertyIterator = properties.entrySet().iterator();
+        Iterator<Entry<String, PropertyData>> propertyIterator = properties.entrySet().iterator();
         while (propertyIterator.hasNext())
         {
-            final Entry<String, Object> entry = propertyIterator.next();
-            if (entry.getValue() instanceof Serializable)
+            final Entry<String, PropertyData> entry = propertyIterator.next();
+            if (entry.getValue().getValue() instanceof Serializable)
             {
                 propertyIterator.remove();
             }
         }
         for (String updatedPropertyKey : updatedSession.getPropertyNamesAsSet())
         {
-            this.properties.put(updatedPropertyKey, updatedSession.<Object> getProperty(updatedPropertyKey));
+            this.properties.put(updatedPropertyKey, updatedSession.getPropertyData(updatedPropertyKey));
         }
     }
 
     public Map<String, Object> getProperties()
+    {
+        Map<String, Object> result = new HashMap<>();
+        for (String key : properties.keySet())
+        {
+            PropertyData propertyData = properties.get(key);
+            result.put(key, propertyData.getValue());
+        }
+
+        return result;
+    }
+
+    public Map<String, PropertyData> getExtendedProperties()
     {
         return properties;
     }
 
     void removeNonSerializableProperties()
     {
-        Iterator<Entry<String, Object>> propertyIterator = properties.entrySet().iterator();
+        Iterator<Entry<String, PropertyData>> propertyIterator = properties.entrySet().iterator();
         while (propertyIterator.hasNext())
         {
-            final Entry<String, Object> entry = propertyIterator.next();
-            if (!(entry.getValue() instanceof Serializable))
+            final Entry<String, PropertyData> entry = propertyIterator.next();
+            if (!(entry.getValue().getValue() instanceof Serializable))
             {
                 logger.warn(CoreMessages.propertyNotSerializableWasDropped(entry.getKey()));
                 propertyIterator.remove();
@@ -278,7 +298,7 @@ public final class DefaultMuleSession implements MuleSession
         // Temporally replaces the properties to write only serializable values into the stream
         DefaultMuleSession copy = new DefaultMuleSession(this);
         copy.removeNonSerializableProperties();
-        Map<String, Object> backupProperties = properties;
+        Map<String, PropertyData> backupProperties = properties;
         try
         {
             properties = copy.properties;
@@ -314,4 +334,9 @@ public final class DefaultMuleSession implements MuleSession
         this.flowConstruct = flowConstruct;
     }
 
+    @Override
+    public PropertyData getPropertyData(String key)
+    {
+        return properties.get(key);
+    }
 }

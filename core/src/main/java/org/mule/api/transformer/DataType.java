@@ -71,4 +71,6 @@ public interface DataType<T> extends Serializable, Cloneable
     DataType<byte[]> BYTE_ARRAY_DATA_TYPE = DataTypeFactory.createImmutable(byte[].class);
 
     DataType<String> STRING_DATA_TYPE = DataTypeFactory.createImmutable(String.class);
+
+    DataType<Object> OBJECT_DATA_TYPE = DataTypeFactory.createImmutable(Object.class);
 }

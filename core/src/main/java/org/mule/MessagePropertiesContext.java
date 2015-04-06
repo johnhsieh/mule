@@ -9,8 +9,10 @@ package org.mule;
 import org.mule.api.MuleEvent;
 import org.mule.api.MuleMessage;
 import org.mule.api.MuleSession;
+import org.mule.api.transformer.DataType;
 import org.mule.api.transport.PropertyScope;
 import org.mule.config.i18n.CoreMessages;
+import org.mule.transformer.types.SimpleDataType;
 import org.mule.util.CaseInsensitiveHashMap;
 import org.mule.util.CopyOnWriteCaseInsensitiveMap;
 import org.mule.util.MapUtils;
@@ -21,6 +23,7 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.AbstractMap;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -50,16 +53,16 @@ public class MessagePropertiesContext implements Serializable
 
     private static Log logger = LogFactory.getLog(MessagePropertiesContext.class);
 
-    protected CopyOnWriteCaseInsensitiveMap<String, Object> inboundMap;
-    protected CopyOnWriteCaseInsensitiveMap<String, Object> outboundMap;
+    protected CopyOnWriteCaseInsensitiveMap<String, PropertyData> inboundMap;
+    protected CopyOnWriteCaseInsensitiveMap<String, PropertyData> outboundMap;
 
-    protected Map<String, Object> invocationMap = new UndefinedInvocationPropertiesMap();
-    protected transient Map<String, Object> sessionMap = new UndefinedSessionPropertiesMap();
+    protected Map<String, PropertyData> invocationMap = new UndefinedInvocationPropertiesMap();
+    protected transient Map<String, PropertyData> sessionMap = new UndefinedSessionPropertiesMap();
 
     public MessagePropertiesContext()
     {
-        inboundMap = new CopyOnWriteCaseInsensitiveMap<String, Object>();
-        outboundMap = new CopyOnWriteCaseInsensitiveMap<String, Object>();
+        inboundMap = new CopyOnWriteCaseInsensitiveMap<String, PropertyData>();
+        outboundMap = new CopyOnWriteCaseInsensitiveMap<String, PropertyData>();
     }
 
     public MessagePropertiesContext(MessagePropertiesContext previous)
@@ -70,7 +73,7 @@ public class MessagePropertiesContext implements Serializable
         sessionMap = previous.sessionMap;
     }
 
-    protected Map<String, Object> getScopedProperties(PropertyScope scope)
+    protected Map<String, PropertyData> getScopedProperties(PropertyScope scope)
     {
         if (PropertyScope.SESSION.equals(scope))
         {
@@ -103,7 +106,13 @@ public class MessagePropertiesContext implements Serializable
     {
         if (properties != null)
         {
-            getScopedProperties(PropertyScope.INBOUND).putAll(properties);
+            Map<String, PropertyData> propertyDatas = new HashMap<>();
+            for (String key : properties.keySet())
+            {
+                propertyDatas.put(key, new PropertyData(properties.get(key), DataType.OBJECT_DATA_TYPE));
+            }
+
+            getScopedProperties(PropertyScope.INBOUND).putAll(propertyDatas);
         }
     }
 
@@ -125,7 +134,15 @@ public class MessagePropertiesContext implements Serializable
             scope = PropertyScope.OUTBOUND;
         }
 
-        return (T) getScopedProperties(scope).get(key);
+        PropertyData propertyData = getScopedProperties(scope).get(key);
+        if (propertyData == null)
+        {
+            return null;
+        }
+        else
+        {
+            return (T) propertyData.getValue();
+        }
     }
 
     /**
@@ -134,7 +151,7 @@ public class MessagePropertiesContext implements Serializable
      */
     public void clearProperties()
     {
-        Map<String, Object> props = getScopedProperties(PropertyScope.INVOCATION);
+        Map<String, PropertyData> props = getScopedProperties(PropertyScope.INVOCATION);
         props.clear();
         props = getScopedProperties(PropertyScope.OUTBOUND);
         props.clear();
@@ -148,7 +165,7 @@ public class MessagePropertiesContext implements Serializable
             return;
         }
 
-        Map<String, Object> props = getScopedProperties(scope);
+        Map<String, PropertyData> props = getScopedProperties(scope);
         props.clear();
     }
 
@@ -161,15 +178,15 @@ public class MessagePropertiesContext implements Serializable
      */
     public Object removeProperty(String key)
     {
-        Object value = getScopedProperties(PropertyScope.OUTBOUND).remove(key);
-        Object inv = getScopedProperties(PropertyScope.INVOCATION).remove(key);
+        PropertyData value = getScopedProperties(PropertyScope.OUTBOUND).remove(key);
+        PropertyData inv = getScopedProperties(PropertyScope.INVOCATION).remove(key);
 
         if (value == null)
         {
             value = inv;
         }
 
-        return value;
+        return value == null ? null : value.getValue();
     }
 
     /**
@@ -185,9 +202,9 @@ public class MessagePropertiesContext implements Serializable
             return removeProperty(key);
         }
 
-        Object value = getScopedProperties(scope).remove(key);
+        PropertyData value = getScopedProperties(scope).remove(key);
 
-        return value;
+        return value == null ? null : value.getValue();
     }
 
     /**
@@ -200,7 +217,9 @@ public class MessagePropertiesContext implements Serializable
     @Deprecated
     public void setProperty(String key, Object value)
     {
-        getScopedProperties(DEFAULT_SCOPE).put(key, value);
+        //TODO(pablo.kraan): DFL - check property data creation arguments
+        DataType dataType = new SimpleDataType(value == null ? Object.class : value.getClass(), null);
+        getScopedProperties(DEFAULT_SCOPE).put(key, new PropertyData(value, dataType));
     }
 
     /**
@@ -218,7 +237,9 @@ public class MessagePropertiesContext implements Serializable
             logger.warn(CoreMessages.sessionPropertyNotSerializableWarning(key));
         }
 
-        getScopedProperties(scope).put(key, value);
+        //TODO(pablo.kraan): DFL - check property data creation arguments
+        DataType dataType = new SimpleDataType(value == null ? Object.class : value.getClass(), null);
+        getScopedProperties(scope).put(key, new PropertyData(value, dataType));
     }
 
     /**
@@ -312,9 +333,9 @@ public class MessagePropertiesContext implements Serializable
      */
     private void writeObject(java.io.ObjectOutputStream out) throws IOException
     {
-        for (Map.Entry<String, Object> entry : inboundMap.entrySet())
+        for (Map.Entry<String, PropertyData> entry : inboundMap.entrySet())
         {
-            Object value = entry.getValue();
+            Object value = entry.getValue().getValue();
             if (value != null && !(value instanceof Serializable))
             {
                 String message = String.format(
@@ -324,9 +345,9 @@ public class MessagePropertiesContext implements Serializable
                 throw new IOException(message);
             }
         }
-        for (Map.Entry<String, Object> entry : outboundMap.entrySet())
+        for (Map.Entry<String, PropertyData> entry : outboundMap.entrySet())
         {
-            Object value = entry.getValue();
+            Object value = entry.getValue().getValue();
             if (value != null && !(value instanceof Serializable))
             {
                 String message = String.format(
@@ -338,9 +359,9 @@ public class MessagePropertiesContext implements Serializable
         }
         if (invocationMap instanceof UndefinedInvocationPropertiesMap)
         {
-            for (Map.Entry<String, Object> entry : invocationMap.entrySet())
+            for (Map.Entry<String, PropertyData> entry : invocationMap.entrySet())
             {
-                Object value = entry.getValue();
+                Object value = entry.getValue().getValue();
                 if (value != null && !(value instanceof Serializable))
                 {
                     String message = String.format(
@@ -360,20 +381,20 @@ public class MessagePropertiesContext implements Serializable
         sessionMap = new UndefinedSessionPropertiesMap();
     }
 
-    private static class UndefinedSessionPropertiesMap extends AbstractMap<String, Object>
+    private static class UndefinedSessionPropertiesMap extends AbstractMap<String, PropertyData>
         implements Serializable
     {
 
         private static final long serialVersionUID = -7982608304570908737L;
 
         @Override
-        public Set<java.util.Map.Entry<String, Object>> entrySet()
+        public Set<java.util.Map.Entry<String, PropertyData>> entrySet()
         {
             return Collections.emptySet();
         }
 
         @Override
-        public Object put(String key, Object value)
+        public PropertyData put(String key, PropertyData value)
         {
             throw new IllegalStateException(
                 String.format(
@@ -383,7 +404,7 @@ public class MessagePropertiesContext implements Serializable
         }
 
         @Override
-        public Object get(Object key)
+        public PropertyData get(Object key)
         {
             logger.warn(String.format(
                 "Detected an attempt to get a invocation or session property, "
@@ -398,7 +419,7 @@ public class MessagePropertiesContext implements Serializable
 
     }
 
-    protected Map<String, Object> getOrphanFlowVariables()
+    protected Map<String, PropertyData> getOrphanFlowVariables()
     {
         if (invocationMap instanceof UndefinedInvocationPropertiesMap)
         {
