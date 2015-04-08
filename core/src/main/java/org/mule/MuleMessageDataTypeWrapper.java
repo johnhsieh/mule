@@ -85,4 +85,14 @@ public class MuleMessageDataTypeWrapper<T> implements DataType<T>
     {
         return dataType;
     }
+
+    @Override
+    public String toString()
+    {
+        return "MuleMessageDataTypeWrapper{" +
+               "type=" + (dataType.getType() == null ? null : dataType.getType().getName())+
+               ", mimeType='" + dataType.getMimeType() + '\'' +
+               ", encoding='" + dataType.getEncoding() + '\'' +
+               '}';
+    }
 }

@@ -142,7 +142,8 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
 
     public DefaultMuleMessage(MuleMessage message)
     {
-        this(message.getPayload(), message, message.getMuleContext());
+        //TODO(pablo.kraan): DFL - add test for this constructor and dataType
+        this(message.getPayload(), message, message.getMuleContext(), true);
     }
 
     public DefaultMuleMessage(Object message, MuleContext muleContext)
@@ -195,6 +196,11 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
 
     public DefaultMuleMessage(Object message, MuleMessage previous, MuleContext muleContext)
     {
+        this(message, previous, muleContext, false);
+    }
+
+    private DefaultMuleMessage(Object message, MuleMessage previous, MuleContext muleContext, boolean isCloningMessage)
+    {
         id = previous.getUniqueId();
         rootId = previous.getMessageRootId();
         setMuleContext(muleContext);
@@ -208,10 +214,18 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
         }
         else
         {
-            DataType newDataType = new SimpleDataType<>(message.getClass(), previous.getDataType().getMimeType());
+            DataType newDataType;
+            if (isCloningMessage)
+            {
+                newDataType = new SimpleDataType<>(previous.getDataType().getType(), previous.getDataType().getMimeType());
+            }
+            else
+            {
+                newDataType = new SimpleDataType<>(message.getClass(), previous.getDataType().getMimeType());
+            }
+
             newDataType.setEncoding(previous.getEncoding());
-            dataType = createDataTypeWrapper(newDataType);
-            setPayload(message);
+            setPayload(message, createDataTypeWrapper(newDataType));
             copyMessagePropertiesContext(previous);
         }
 
@@ -2042,7 +2056,7 @@ public class DefaultMuleMessage implements MuleMessage, ThreadSafeAccess, Deseri
     @Override
     public MuleMessage createInboundMessage() throws Exception
     {
-        DefaultMuleMessage newMessage =  new DefaultMuleMessage(getPayload(), this, getMuleContext());
+        DefaultMuleMessage newMessage =  new DefaultMuleMessage(this);
         copyToInbound(newMessage);
         return newMessage;
     }
